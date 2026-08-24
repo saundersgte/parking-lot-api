@@ -1,0 +1,22 @@
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+
+# --- Secrets ---
+.env
+*.pem
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# --- Lambda build output ---
+build/
+*.zip
+
+# --- macOS ---
+.DS_Store
