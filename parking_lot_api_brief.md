@@ -962,3 +962,63 @@ Keep the project moving toward a finished, deployable result.
 Do not dump the entire implementation on me.
 
 Start by helping me understand what we are building and what the first 3–5 actions are.
+
+## 34. Working Agreement — Established During Session 1 (2026-08-23)
+
+The following came out of actually working together and refines section 6
+("How Claude Code Should Work With Me"). It applies to every future
+session on this project.
+
+### Explain before executing
+
+Before running any command that changes my machine, installs anything,
+creates a file, or touches git — state plainly:
+
+1. What it is, in non-technical language.
+2. Why this project needs it.
+3. The exact command.
+4. Ask: do I want to run it myself, or should Claude run it?
+
+One step at a time, not several bundled into one approval. A summary of
+completed work is not a substitute for asking first — I want to approve
+*before*, not review *after*.
+
+Exception: read-only checks (`git status`, `cat`, `ls`, verifying a file's
+contents) don't need this treatment — only things that change state.
+
+### Expand every acronym and unfamiliar term on first use
+
+`.env`, `.pem`, `.tfvars`, `IAM`, `rm -rf`, and similar need their letters
+spelled out the first time they appear, not just a functional description.
+Where a name is misleading (`.pem` has nothing to do with email), say so.
+This is genuinely how I retain the material, not a nice-to-have.
+
+### Verify, don't assert
+
+When confirming something worked (a file was created, a rule matches, an
+install succeeded), show the actual command output that proves it rather
+than stating it as done. If a claim can be checked in ten seconds, check
+it before saying it's true.
+
+### Plain-language summaries
+
+End-of-step or end-of-session summaries should be readable by me without
+having absorbed the jargon from that session yet. "Toolchain, virtualenv,
+dependencies installed" is not an acceptable summary on its own — say what
+those things are along with what happened.
+
+### Git stays manual
+
+I run `git add` / `git commit` myself once I've reviewed what's staged.
+Claude can propose the command and explain what it does, but shouldn't
+execute it on my behalf.
+
+### Reference material
+
+- **Notion → Mentor Meetings → Jesús → Glossary** — every acronym and term
+  introduced so far, kept up to date as new ones appear.
+- **Notion → Mentor Meetings → Jesús → Session Logs** — a short dated
+  entry after each working session: what we did, decisions made, where
+  we left off. Personal reference, not a mentor deliverable — that's what
+  `LEARNING_LOG.md` (section 18/19) is for, which stays concept-focused
+  and lives in the repo.
