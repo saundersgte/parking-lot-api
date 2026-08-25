@@ -18,30 +18,8 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# health check for fastapi
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
-# =====================================================================
-# YOUR TASK - write the health check endpoint below this comment.
-#
-# Requirement:
-#     GET /health   ->   {"status": "ok"}
-#
-# Hints (Level 1 - a clue, not the answer):
-#
-#   * A route is an ordinary Python function with a decorator on the
-#     line directly above it.
-#
-#   * The decorator you need is  @app.get("/health")
-#     Read it as: "when a GET request arrives for /health, run the
-#     function underneath me."
-#
-#   * The function needs no parameters. Give it a sensible name -
-#     the name is for you, not for the URL. The URL comes from the
-#     decorator.
-#
-#   * Whatever the function RETURNS becomes the response body.
-#     Return a Python dictionary and FastAPI converts it to JSON
-#     automatically. You do not need to import json, or call
-#     json.dumps, or build a Response object.
-#
-# Delete this comment block once it works.
-# =====================================================================
