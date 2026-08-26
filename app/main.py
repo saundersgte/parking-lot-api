@@ -7,6 +7,9 @@ Run locally from the project root with:
 
 from fastapi import FastAPI
 
+from app.models import Spot
+from app import storage
+
 # `app` is the application object.
 #
 # It is the single thing a web server needs in order to run this API.
@@ -23,3 +26,11 @@ app = FastAPI(
 def health_check():
     return {"status": "ok"}
 
+@app.post("/spots", status_code=201)
+def create_spot(spot: Spot):
+    storage.save_spot(spot)
+    return spot
+
+@app.get("/spots")
+def get_spots():
+    return storage.list_spots()
