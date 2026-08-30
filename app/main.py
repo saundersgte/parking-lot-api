@@ -30,6 +30,28 @@ def create_spot(spot: Spot):
     storage.save_spot(spot)
     return spot
 
+@app.post("/spots/{spot_id}/check-in")
+def check_in(spot_id: str):
+    spot = storage.get_spot(spot_id)
+    if spot is None:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    if spot.status != "AVAILABLE":
+        raise HTTPException(status_code=409, detail="Spot is not available")
+    spot.status = "OCCUPIED"
+    storage.save_spot(spot)
+    return spot
+
+@app.post("/spots/{spot_id}/check-out")
+def check_out(spot_id: str):
+    spot = storage.get_spot(spot_id)
+    if spot is None:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    if spot.status != "OCCUPIED":
+        raise HTTPException(status_code=409, detail="Spot is not occupied")
+    spot.status = "AVAILABLE"
+    storage.save_spot(spot)
+    return spot
+
 @app.get("/spots")
 def get_spots():
     return storage.list_spots()
