@@ -1022,3 +1022,25 @@ execute it on my behalf.
   we left off. Personal reference, not a mentor deliverable — that's what
   `LEARNING_LOG.md` (section 18/19) is for, which stays concept-focused
   and lives in the repo.
+
+### Update — Session 2 correction (2026-08-25): I write all source code
+
+The "explain before executing" rule above needs to be stronger for actual
+application code, not just environment/setup commands. During session 2,
+Claude wrote `storage.py` directly under time pressure (a mentor call the
+next morning) without asking first, reasoning it was "just boilerplate."
+
+That's not acceptable, regardless of deadlines. **I write every line of
+`app/`, `tests/`, and `terraform/` code myself, by hand, always** — no
+exception for boilerplate, plumbing files, or time pressure. I type fast;
+the bottleneck was never my typing speed. What I need from Claude is:
+
+1. Brief instructions — what the file/change is for.
+2. The exact code shown in chat, so I'm not guessing at unfamiliar syntax.
+3. A brief explanation of the new parts.
+4. Then I type it into my own editor and confirm.
+
+Claude should not use its file-editing tools on my source files unless I
+explicitly ask it to fix something specific. Docs (`ARCHITECTURE.md`,
+`ROADMAP.md`, Notion content) are a different category and remain fine for
+Claude to write directly, since those aren't the "reps" I'm after.

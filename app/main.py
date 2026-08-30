@@ -6,7 +6,7 @@ Run locally from the project root with:
 """
 
 from fastapi import FastAPI
-
+from fastapi import HTTPException
 from app.models import Spot
 from app import storage
 
@@ -34,3 +34,10 @@ def create_spot(spot: Spot):
 @app.get("/spots")
 def get_spots():
     return storage.list_spots()
+
+@app.get("/spots/{spot_id}")
+def get_spot(spot_id: str):
+    spot = storage.get_spot(spot_id)
+    if spot is None:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    return spot
