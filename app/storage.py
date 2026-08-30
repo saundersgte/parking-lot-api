@@ -12,3 +12,7 @@ def get_spot(spot_id: str) -> Spot | None:
 
 def list_spots() -> list[Spot]:
     return list(_spots.values())
+
+def delete_spot(spot_id: str) -> None:
+    del _spots[spot_id]
+

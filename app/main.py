@@ -5,8 +5,7 @@ Run locally from the project root with:
     uvicorn app.main:app --reload
 """
 
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from app.models import Spot
 from app import storage
 
@@ -41,3 +40,16 @@ def get_spot(spot_id: str):
     if spot is None:
         raise HTTPException(status_code=404, detail="Spot not found")
     return spot
+
+@app.put("/spots/{spot_id}")
+def update_spot(spot_id: str, spot:Spot):
+    if storage.get_spot(spot_id) is None:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    storage.save_spot(spot)
+    return spot
+
+@app.delete("/spots/{spot_id}", status_code=204)
+def delete_spot(spot_id: str):
+    if storage.get_spot(spot_id) is None:
+        raise HTTPException(status_code=404, detail="Spot not found")
+    storage.delete_spot(spot_id)
