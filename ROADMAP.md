@@ -24,19 +24,20 @@ Updated as milestones complete, not on a fixed schedule.
 - Verified end-to-end with curl: created a spot, listed it back, and
   observed firsthand that restarting the server (`--reload`) wipes
   in-memory data — the concrete reason a real database is coming.
+- `GET /spots/{spot_id}` — fetch one spot by ID, `404` if it doesn't exist.
+- Full CRUD complete: `PUT` and `DELETE /spots/{spot_id}`.
+- Check-in / check-out endpoints and the `AVAILABLE` ⇄ `OCCUPIED` state
+  machine — invalid transitions correctly rejected with `409 Conflict`.
+- First automated test (`tests/test_spots.py`), using pytest's `TestClient`.
 
 ## Current
 
-- `GET /spots/{spot_id}` — fetch one spot by ID, `404` if it doesn't exist.
-  Explained, not yet typed in.
-- Full CRUD: `PUT` and `DELETE /spots/{spot_id}`.
+- pytest suite: CRUD, both state transitions, every error path. One test
+  written (`test_health`); the rest still to come.
 
 ## Next
 
-- Check-in / check-out endpoints and the `AVAILABLE` ⇄ `OCCUPIED` state
-  machine, with sensible errors on invalid transitions.
 - A consistent validation and error-handling pass across every endpoint.
-- pytest suite: CRUD, both state transitions, every error path.
 - Session history (`parking_sessions` table design) — deferred until after
   core CRUD is solid, per the sequencing decided in `ARCHITECTURE.md`.
 - Swap in-memory storage for DynamoDB.

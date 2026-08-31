@@ -85,9 +85,29 @@ shouldn't require touching `main.py` at all.
 **Why we needed it:** a response needs to say more than just "it worked" —
 callers need to know *what kind* of thing happened.
 **What it does:** `GET` reads, `POST` creates. `200` = success, `201` =
-success and something new now exists, `404` = the specific thing
-requested doesn't exist.
-**How we used it:** `@app.post("/spots", status_code=201)` for creation;
-`/health` and `GET /spots` default to `200`.
+success and something new now exists, `204` = success with deliberately
+no body, `404` = the thing doesn't exist, `409` = the request is valid
+but the resource's current state makes it invalid right now.
+**How we used it:** `status_code=201` on create, `status_code=204` on
+delete (no `return`), `404` when a spot ID isn't found, `409` when
+check-in/check-out is attempted on a spot already in that state.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## Automated testing: pytest, TestClient, assert
+
+**Why we needed it:** manually re-running curl commands after every
+change doesn't scale, and proves nothing stays working once something
+new gets added.
+**What it does:** `TestClient(app)` wraps the FastAPI app so a test can
+send it fake requests directly in memory, no real server required.
+`assert condition` fails that one test immediately if the condition is
+false; every other `test_` function still runs independently.
+**How we used it:** `tests/test_spots.py`, testing `/health` with two
+assertions (status code and body). Run with `python -m pytest -v` —
+plain `pytest` fails here because it doesn't add the project folder to
+Python's import search list, so it can't find `app`.
 **What I understand:**
 **What I still need to learn:**
