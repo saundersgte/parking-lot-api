@@ -16,8 +16,8 @@ the laptop.
 sealed off from the system-wide Python.
 **How we used it:** `python3.13 -m venv .venv`, then `source .venv/bin/activate`
 at the start of every session.
-**What I understand:**
-**What I still need to learn:**
+**What I understand:** running apps within virtual environment is essentially creates its own independent instance, separate from other files, projects, applications etc on my computer. 
+**What I still need to learn:** how to continually manage, operate, create these environments from scratch. 
 
 ---
 
@@ -30,8 +30,8 @@ patterns git refuses to save, checked before every commit.
 **How we used it:** wrote `.gitignore` before any file existed that could
 contain a secret, then verified rules with `git check-ignore -v` rather
 than assuming they worked.
-**What I understand:**
-**What I still need to learn:**
+**What I understand:** 
+**What I still need to learn:** how to setup, continually manage, and actively utilize these files and functions
 
 ---
 
@@ -91,8 +91,8 @@ but the resource's current state makes it invalid right now.
 **How we used it:** `status_code=201` on create, `status_code=204` on
 delete (no `return`), `404` when a spot ID isn't found, `409` when
 check-in/check-out is attempted on a spot already in that state.
-**What I understand:**
-**What I still need to learn:**
+**What I understand:** i understand most of the codes and their purposes/ use cases
+**What I still need to learn:** how to use them actively when testing and creating for troubleshooting and verification
 
 ---
 
