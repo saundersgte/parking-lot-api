@@ -111,3 +111,27 @@ plain `pytest` fails here because it doesn't add the project folder to
 Python's import search list, so it can't find `app`.
 **What I understand:**
 **What I still need to learn:**
+
+---
+
+## Reading Python errors
+
+**Why we needed it:** most of the time spent building isn't writing new
+code, it's working out why the code already written isn't doing what was
+expected.
+**What it does:** each error type points at a different kind of mistake,
+and the message names the exact file and line:
+- `SyntaxError: expected ':'` — a missing colon on a `def`/`if`/`for`.
+- `SyntaxError: invalid syntax` on an `assert` — usually `=` (assign)
+  where `==` (compare) belongs.
+- `NameError: name 'x' is not defined` — a misspelled variable.
+- `ModuleNotFoundError: No module named 'app'` — Python searched its list
+  of folders and found nothing by that name. Usually means the command
+  was run from the wrong directory.
+- A test failure like `assert 404 == 200` — the code ran fine; it just
+  produced a different answer than expected.
+**How we used it:** hit all five of these in one session and worked
+through each from the message alone. Also found a duplicate `test/`
+folder created by a stale editor tab still pointing at the old path.
+**What I understand:**
+**What I still need to learn:**

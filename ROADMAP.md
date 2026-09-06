@@ -29,18 +29,25 @@ Updated as milestones complete, not on a fixed schedule.
 - Check-in / check-out endpoints and the `AVAILABLE` ⇄ `OCCUPIED` state
   machine — invalid transitions correctly rejected with `409 Conflict`.
 - First automated test (`tests/test_spots.py`), using pytest's `TestClient`.
+- Full pytest suite — 6 passing tests covering health, create, fetch one,
+  missing-spot `404`, the full check-in/check-out cycle, and the `409`
+  conflict on an invalid transition.
+
+**Week 1 application work is complete.** Every endpoint is built, tested,
+and committed.
 
 ## Current
 
-- pytest suite: CRUD, both state transitions, every error path. One test
-  written (`test_health`); the rest still to come.
+- Week 2: swap in-memory storage for DynamoDB. Only `app/storage.py`
+  should need to change — that was the whole point of the seam.
 
 ## Next
 
+- Test isolation: a pytest *fixture* to reset storage between tests, so
+  tests don't depend on using unique spot IDs to avoid interfering.
 - A consistent validation and error-handling pass across every endpoint.
 - Session history (`parking_sessions` table design) — deferred until after
   core CRUD is solid, per the sequencing decided in `ARCHITECTURE.md`.
-- Swap in-memory storage for DynamoDB.
 - Terraform: DynamoDB table, IAM role/policy, Lambda, API Gateway, log group.
 - Deploy, test against the real AWS URL, then destroy and re-apply to
   prove the stack is idempotent.
