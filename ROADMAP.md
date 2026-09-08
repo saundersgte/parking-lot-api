@@ -36,19 +36,40 @@ Updated as milestones complete, not on a fixed schedule.
 **Week 1 application work is complete.** Every endpoint is built, tested,
 and committed.
 
+### Week 2
+
+- AWS access configured: a dedicated `parking-api-dev` IAM user (not root,
+  not the admin user), with its access key stored in `~/.aws/credentials`
+  — outside the repository, so it cannot be committed. Region `us-west-2`.
+- First Terraform: `terraform/` holding `versions.tf` (pins the AWS
+  provider to 6.x), `providers.tf` (region), and `main.tf` (the
+  `parking_spots` DynamoDB table, on-demand billing, `spot_id` as
+  partition key). `init`, `fmt`, `validate`, `plan`, and `apply` all run
+  clean; `.terraform.lock.hcl` is committed, state and the provider cache
+  are gitignored.
+- `parking_spots` table live in AWS and confirmed `ACTIVE`.
+- `app/storage.py` rewritten against DynamoDB using boto3 — `put_item`,
+  `get_item`, `scan`, `delete_item` behind the same four function
+  signatures as before. `main.py`, `models.py`, and `tests/` were not
+  touched, which is exactly what the seam was built for.
+- All 6 tests pass against the real table, and data now survives a server
+  restart.
+
 ## Current
 
-- Week 2: swap in-memory storage for DynamoDB. Only `app/storage.py`
-  should need to change — that was the whole point of the seam.
+- Test isolation: a pytest *fixture* to clear the table between tests.
+  Now more than a nicety — the suite leaves real rows behind in AWS.
 
 ## Next
 
-- Test isolation: a pytest *fixture* to reset storage between tests, so
-  tests don't depend on using unique spot IDs to avoid interfering.
+- Tighten the `parking-api-dev` IAM policy from full DynamoDB access down
+  to this table's ARN, then re-run the tests to prove least privilege
+  didn't break anything.
 - A consistent validation and error-handling pass across every endpoint.
 - Session history (`parking_sessions` table design) — deferred until after
   core CRUD is solid, per the sequencing decided in `ARCHITECTURE.md`.
-- Terraform: DynamoDB table, IAM role/policy, Lambda, API Gateway, log group.
+- Terraform for the rest of the stack: IAM execution role/policy, Lambda,
+  API Gateway, log group.
 - Deploy, test against the real AWS URL, then destroy and re-apply to
   prove the stack is idempotent.
 - `README.md`, security review, cost review, mentor demo.
