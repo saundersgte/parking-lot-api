@@ -1,6 +1,7 @@
 # Runtime
 fastapi
 uvicorn[standard]
+boto3
 
 # Testing
 pytest
