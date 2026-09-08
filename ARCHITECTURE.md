@@ -126,6 +126,49 @@ the application already works.
 
 ---
 
+## Decision 4 — `Scan` for listing spots
+
+**Chosen:** `GET /spots` calls DynamoDB's `Scan`.
+**Alternative:** a global secondary index, or a separate index item
+holding every spot ID.
+
+**Why:** "list every spot" has no partition key to look up by — it is
+inherently a full-table read. DynamoDB offers no cheaper equivalent of
+`SELECT * FROM spots`.
+
+**What this costs:**
+- `Scan` reads and bills for every item in the table, not just the ones
+  returned.
+- A single `Scan` returns at most **1 MB**. Past that it returns a
+  `LastEvaluatedKey` and the caller must request the next page.
+  `list_spots()` does not paginate; it returns the first page only.
+
+Accepted at this scale. A parking lot holds tens of spots at roughly 50
+bytes each — the 1 MB ceiling is orders of magnitude beyond anything this
+project will store. It is recorded because it is a genuine defect at a
+scale this project will never reach, and the fix (a pagination loop)
+belongs in the code when the data justifies it, not before.
+
+---
+
+## Configuration — how the application finds the table
+
+`app/storage.py` reads the table name from the `SPOTS_TABLE` environment
+variable, falling back to `parking_spots` when it is unset. Locally
+nothing sets it, so the default applies and no configuration is needed to
+run the app or the tests. In AWS, Terraform sets `SPOTS_TABLE` on the
+Lambda function, so the deployed code targets whichever table Terraform
+actually created. The name is never hardcoded in application code.
+
+Credentials follow the same principle, and are never passed to boto3 at
+all. The SDK resolves them itself: `~/.aws/credentials` when running
+locally, the execution role's automatically-injected temporary
+credentials when running in Lambda. The line `boto3.resource("dynamodb")`
+is byte-identical in both environments — there is no `if production:`
+branch anywhere in the codebase.
+
+---
+
 ## Security posture
 
 - **No credentials anywhere.** Lambda assumes an IAM role; AWS injects
