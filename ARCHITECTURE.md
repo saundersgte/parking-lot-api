@@ -34,6 +34,46 @@ IAM role/policy  -> grants access to exactly these two tables
 
 ---
 
+## Request flow — one check-in, end to end
+
+Tracing `POST /spots/A1/check-in`:
+
+1. **Arrival.** Locally, uvicorn accepts the HTTP request on port 8000. In
+   AWS, API Gateway terminates TLS at the public URL and invokes Lambda
+   with the request packed into an *event* dictionary, which Mangum
+   unpacks back into an ordinary HTTP request. *(Not built yet.)*
+   Everything below this step is identical in both environments.
+2. **Routing.** FastAPI matches the method and path against its routing
+   table — assembled at import time, when each `@app.post(...)` decorator
+   ran — and calls `check_in(spot_id="A1")` in `app/main.py`.
+3. **Read.** The route calls `storage.get_spot("A1")`, which issues a
+   DynamoDB `GetItem` against `parking_spots`, keyed on the partition key.
+   boto3 signs that request with credentials it resolved on its own. A
+   missing item comes back as `None`, and the route raises `404`.
+4. **Business rule.** The route checks `spot.status != "AVAILABLE"` and
+   raises `409 Conflict` if the spot is already taken. The state machine
+   lives here — not in the database, and not in the model.
+5. **Write.** `spot.status = "OCCUPIED"`, then `storage.save_spot(spot)`
+   issues a `PutItem`, which replaces the whole item.
+6. **Response.** The route returns the `Spot`; Pydantic serialises it to
+   JSON and FastAPI sends `200 OK`. In AWS, Mangum converts that into the
+   response shape API Gateway expects.
+
+Where each concern lives:
+
+| Concern | Where |
+|---|---|
+| HTTP shape — paths, methods, status codes | `app/main.py` |
+| Input validation | `app/models.py` |
+| Business rules and state transitions | `app/main.py` routes |
+| Persistence | `app/storage.py` |
+
+Nothing above `storage.py` knows DynamoDB exists. That is why swapping the
+in-memory dictionary for a real database changed one file and left every
+route and every test untouched.
+
+---
+
 ## Decision 1 — Serverless over containers
 
 **Chosen:** API Gateway (HTTP API) -> Lambda -> DynamoDB
