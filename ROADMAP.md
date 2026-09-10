@@ -54,22 +54,38 @@ and committed.
   touched, which is exactly what the seam was built for.
 - All 6 tests pass against the real table, and data now survives a server
   restart.
+- Test isolation: `tests/conftest.py` holds an `autouse` fixture that
+  clears every spot after each test, so the suite no longer leaves rows
+  behind in a real AWS table.
+- `ARCHITECTURE.md` gained a **Request flow** walkthrough — one check-in
+  traced from arrival through routing, read, rule, write and response,
+  plus which file owns which concern.
+- Deployment identity scoped: `iam/deploy-policy.json`, a six-statement
+  customer-managed policy covering Lambda, IAM (roles plus a
+  condition-restricted `iam:PassRole`), API Gateway, CloudWatch Logs and
+  DynamoDB. Every statement targets named resources (`parking-*`,
+  `parking_*`); no bare `*` resource and no AWS-managed policy attached.
+  Applied by hand in the console — reasoning recorded as Decision 5 in
+  `ARCHITECTURE.md`. The DynamoDB statement is verified by the passing
+  test suite; the other five are unexercised until the next `apply`.
 
 ## Current
 
-- Test isolation: a pytest *fixture* to clear the table between tests.
-  Now more than a nicety — the suite leaves real rows behind in AWS.
+- Terraform for the **Lambda execution role** — the runtime identity, and
+  the mirror image of the deployment policy: four DynamoDB actions against
+  one table ARN, nothing else.
 
 ## Next
 
-- Tighten the `parking-api-dev` IAM policy from full DynamoDB access down
-  to this table's ARN, then re-run the tests to prove least privilege
-  didn't break anything.
+- Terraform for Lambda, API Gateway and the CloudWatch log group. Two
+  app-side prerequisites ride along: `mangum` is not installed yet, and
+  `main.py` needs one line to expose the Lambda handler.
 - A consistent validation and error-handling pass across every endpoint.
 - Session history (`parking_sessions` table design) — deferred until after
   core CRUD is solid, per the sequencing decided in `ARCHITECTURE.md`.
-- Terraform for the rest of the stack: IAM execution role/policy, Lambda,
-  API Gateway, log group.
 - Deploy, test against the real AWS URL, then destroy and re-apply to
-  prove the stack is idempotent.
+  prove the stack is idempotent. The README's deployment instructions get
+  written during that run, by hand, while the steps are being performed.
 - `README.md`, security review, cost review, mentor demo.
+- At project end: delete the `parking-api-dev` access key — the only
+  long-lived credential in the project.

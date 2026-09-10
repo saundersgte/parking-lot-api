@@ -288,3 +288,38 @@ git cannot reach it. Least privilege doesn't prevent a key from leaking —
 it caps what a leaked key can do.
 **What I understand:**
 **What I still need to learn:**
+
+---
+
+## Writing an IAM policy by hand
+
+**Why we needed it:** `parking-api-dev` could only touch DynamoDB, so
+Terraform would have failed the moment it tried to create a Lambda
+function. The obvious fix — attaching `AWSLambda_FullAccess` and
+`IAMFullAccess` — would have given that key the ability to mint itself an
+administrator role.
+**What it does:** a policy is a list of statements. Each statement answers
+three questions, and sometimes a fourth:
+- `Effect` — Allow or Deny.
+- `Action` — which API calls, written `service:ApiCall`.
+- `Resource` — which things those calls may touch, as an ARN.
+- `Condition` — optional. "Allow this, but only when…".
+
+`Sid` is just a human-readable label with no effect on permissions.
+`"Version": "2012-10-17"` is the name of the policy language itself, not a
+date to update.
+**How we used it:** `iam/deploy-policy.json`, six statements covering
+Lambda, IAM, API Gateway, CloudWatch Logs and DynamoDB. Every `Resource`
+ends in a name prefix (`function:parking-*`, `role/parking-*`,
+`table/parking_*`) so the key can only touch this project's resources —
+it cannot create a role called `admin-everything`. The `iam:PassRole`
+statement carries a `Condition` limiting it to `lambda.amazonaws.com`,
+because "create a role" and "hand a role to a service" are separate
+permissions in AWS, and an unrestricted `PassRole` is a privilege
+escalation waiting to happen.
+
+Two details worth remembering: IAM ARNs have an empty region slot
+(`arn:aws:iam::ACCOUNT:role/...`) because IAM is global, and API Gateway's
+actions are HTTP verbs (`apigateway:POST`) rather than named calls.
+**What I understand:**
+**What I still need to learn:**
