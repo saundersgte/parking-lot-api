@@ -191,6 +191,53 @@ belongs in the code when the data justifies it, not before.
 
 ---
 
+## Decision 5 — Two identities, one of them applied by hand
+
+**Chosen:** two separate IAM identities. A long-lived user,
+`parking-api-dev`, holds *deployment* permissions and is configured by
+hand in the console. A Lambda execution role, created by Terraform, holds
+*runtime* permissions.
+**Alternative:** a single identity used for both, or managing the
+deployment user's own policy in Terraform alongside everything else.
+
+**Why two:** they need opposite scopes. Deploying must be able to create
+IAM roles, Lambda functions, an HTTP API and a log group — inherently
+broad, because provisioning infrastructure requires it. Running only ever
+performs four operations against one table. Collapsing them would drag the
+narrow case up to the broad one, leaving a public web application holding
+permission to create IAM roles.
+
+**Why the deployment policy is not in Terraform:** Terraform authenticates
+*as* that user. A configuration that manages its own credentials can
+revoke its own access part-way through an apply, and recovery requires the
+root account. So bootstrap identity is hand-applied, and version-controlled
+as documentation in `iam/deploy-policy.json`; everything the project
+*builds* stays Terraform-managed. The README states the manual step
+explicitly rather than pretending the deployment is fully automated.
+
+**Scoping, and where it stops:** all six statements target named
+resources — `function:parking-*`, `role/parking-*`, `table/parking_*`,
+`log-group:/aws/lambda/parking-*`. No statement uses a bare `*` resource,
+and no AWS-managed policy is attached. `iam:PassRole` carries a condition
+restricting it to `lambda.amazonaws.com`, so the execution role cannot be
+attached to any other service — without that condition, this key could
+grant a compute instance whatever permissions it liked.
+
+The exception is API Gateway, which puts generated IDs rather than chosen
+names into its ARNs. That statement is therefore scoped to the service, not
+to this project's specific API. Recorded as a known limitation rather than
+left to be discovered.
+
+**What this costs:**
+- One manual step in an otherwise reproducible deployment.
+- A long-lived access key on a laptop — the only non-temporary credential
+  in the project. Mitigated by narrow scope, and by deleting the key once
+  the project is finished. IAM Identity Center issuing short-lived
+  credentials would remove it entirely and would be the correct choice on
+  a team; it is deliberate overhead to skip for a two-week exercise.
+
+---
+
 ## Configuration — how the application finds the table
 
 `app/storage.py` reads the table name from the `SPOTS_TABLE` environment
