@@ -215,18 +215,34 @@ as documentation in `iam/deploy-policy.json`; everything the project
 *builds* stays Terraform-managed. The README states the manual step
 explicitly rather than pretending the deployment is fully automated.
 
-**Scoping, and where it stops:** all six statements target named
-resources — `function:parking-*`, `role/parking-*`, `table/parking_*`,
-`log-group:/aws/lambda/parking-*`. No statement uses a bare `*` resource,
-and no AWS-managed policy is attached. `iam:PassRole` carries a condition
-restricting it to `lambda.amazonaws.com`, so the execution role cannot be
-attached to any other service — without that condition, this key could
-grant a compute instance whatever permissions it liked.
+**Scoping, and where it stops:** no AWS-managed policy is attached, and
+almost every statement targets named resources — `function:parking-*`,
+`role/parking-*`, `table/parking_*`, `log-group:/aws/lambda/parking-*`.
+`iam:PassRole` carries a condition restricting it to
+`lambda.amazonaws.com`, so the execution role cannot be attached to any
+other service; without that condition this key could grant a compute
+instance whatever permissions it liked.
 
-The exception is API Gateway, which puts generated IDs rather than chosen
-names into its ARNs. That statement is therefore scoped to the service, not
-to this project's specific API. Recorded as a known limitation rather than
-left to be discovered.
+Two statements cannot be scoped that tightly, and both are deliberate:
+
+- **API Gateway** puts generated IDs rather than chosen names into its
+  ARNs, so there is no project-specific prefix to match. That statement is
+  scoped to the service instead.
+- **`logs:DescribeLogGroups`** requires `Resource: "*"`. It is a *list*
+  operation — it asks which groups exist, a question that names no
+  particular group — so AWS evaluates it against an empty log-group ARN
+  that no prefix pattern can match. Discovered the direct way: the first
+  `apply` failed with `AccessDenied` on exactly this call.
+
+  The response was to isolate it. `DescribeLogGroups` sits alone in its own
+  statement on `"*"`, while the six log actions that *can* be scoped stay
+  restricted to `/aws/lambda/parking-*`. Granting one read-only list call
+  broadly is a far smaller concession than widening the whole statement.
+
+This is the general shape of the problem: list and describe operations
+usually cannot be resource-scoped, because at the moment of the call no
+resource has been named yet. The discipline is to grant them individually
+rather than to give up on scoping.
 
 **What this costs:**
 - One manual step in an otherwise reproducible deployment.

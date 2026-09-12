@@ -68,7 +68,6 @@
        "Effect": "Allow",
        "Action": [
         "logs:CreateLogGroup",
-        "logs:DescribeLogGroups",
         "logs:DeleteLogGroup",
         "logs:PutRetentionPolicy",
         "logs:DeleteRetentionPolicy",
@@ -76,6 +75,12 @@
         "logs:ListTagsForResource"
        ],
        "Resource": "arn:aws:logs:us-west-2:614190303686:log-group:/aws/lambda/parking-*"
+    },
+    {
+        "Sid": "DescribeLogGroupsUnscoped",
+        "Effect": "Allow",
+        "Action": "logs:DescribeLogGroups",
+        "Resource": "*"
     },
     {
         "Sid": "ManageAndUseParkingTables",
