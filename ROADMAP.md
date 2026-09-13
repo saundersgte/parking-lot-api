@@ -69,23 +69,64 @@ and committed.
   `ARCHITECTURE.md`. The DynamoDB statement is verified by the passing
   test suite; the other five are unexercised until the next `apply`.
 
+- **Lambda execution role** in Terraform — the runtime identity, and the
+  mirror image of the deployment policy: a trust policy allowing only
+  `lambda.amazonaws.com` to assume it, and an inline policy granting four
+  DynamoDB actions against one table ARN, plus writing to its own log group.
+- CloudWatch log group declared explicitly (`/aws/lambda/parking-lot-api`)
+  with 14-day retention, so `destroy` actually removes it rather than
+  leaving an orphan Lambda created for itself.
+- Lambda deployment: `mangum` installed, `handler = Mangum(app)` added to
+  `main.py`, a separate `requirements-lambda.txt` for runtime-only
+  dependencies, and a `build/` folder installed with
+  `--platform manylinux2014_x86_64` so the compiled binaries are Linux
+  rather than macOS. Zipped by Terraform's `archive_file` data source.
+- Function verified in isolation before any HTTP wiring existed, by
+  invoking it directly with hand-written API Gateway events — `/health`
+  first (touches nothing), then `/spots` to prove the execution role could
+  actually reach DynamoDB.
+- API Gateway (HTTP API): the API, a Lambda integration, a `$default`
+  catch-all route, a `$default` stage, and a resource-based
+  `aws_lambda_permission` letting API Gateway invoke the function. FastAPI
+  does the real routing; API Gateway forwards everything.
+- **Full end-to-end verified over the public URL** — create, fetch,
+  check-in, the 409 on a second check-in, check-out, a 404, and delete.
+- **Idempotence proven.** Stack destroyed to nothing (verified against AWS,
+  not just Terraform's state), then rebuilt from configuration alone into a
+  working deployment. Done twice.
+- `PUT /spots/{spot_id}` fixed: it previously trusted the body's `spot_id`
+  over the URL's, so a mismatch silently wrote the wrong item. Now returns
+  `400`, with a test covering it. Seven tests.
+- `README.md` written — purpose, architecture, full API reference with
+  worked examples, prerequisites, deployment, tests, cost, cleanup. The
+  deployment and cleanup sections were written by hand while performing a
+  real destroy-and-rebuild, so the steps are known to work.
+
+**The project meets every item in the brief's Definition of Done.**
+
 ## Current
 
-- Terraform for the **Lambda execution role** — the runtime identity, and
-  the mirror image of the deployment policy: four DynamoDB actions against
-  one table ARN, nothing else.
+- Mentor demo.
 
 ## Next
 
-- Terraform for Lambda, API Gateway and the CloudWatch log group. Two
-  app-side prerequisites ride along: `mangum` is not installed yet, and
-  `main.py` needs one line to expose the Lambda handler.
-- A consistent validation and error-handling pass across every endpoint.
-- Session history (`parking_sessions` table design) — deferred until after
-  core CRUD is solid, per the sequencing decided in `ARCHITECTURE.md`.
-- Deploy, test against the real AWS URL, then destroy and re-apply to
-  prove the stack is idempotent. The README's deployment instructions get
-  written during that run, by hand, while the steps are being performed.
-- `README.md`, security review, cost review, mentor demo.
+- Replace the real AWS account ID in `iam/deploy-policy.json` with the
+  `YOUR_ACCOUNT_ID` placeholder before the repo goes public — the README
+  already instructs readers to substitute a placeholder that isn't there.
+- Delete the `parking-api-dev` access key once the project is finished. It
+  is the only long-lived credential in the project.
+
+## Deliberately not done
+
+- **Session history** (`parking_sessions`). Designed and documented in
+  `ARCHITECTURE.md` Decision 3, not built. The assignment asks for
+  check-in/check-out, which the state machine satisfies; history was an
+  addition of my own and would have required `TransactWriteItems` for an
+  atomic double-write.
+- **Authentication**, multi-region, CI/CD, custom domains, WAF, X-Ray —
+  listed as out of scope in `ARCHITECTURE.md`. The API is deliberately
+  public and unauthenticated.
+- A broader validation and error-handling pass. Pydantic covers request
+  shape; `status` is free text rather than a constrained set of values.
 - At project end: delete the `parking-api-dev` access key — the only
   long-lived credential in the project.

@@ -323,3 +323,132 @@ Two details worth remembering: IAM ARNs have an empty region slot
 actions are HTTP verbs (`apigateway:POST`) rather than named calls.
 **What I understand:**
 **What I still need to learn:**
+
+---
+
+## A role has two policies
+
+**Why we needed it:** the deployed code needs AWS permissions, but putting
+an access key in the source is exactly what the brief forbids.
+**What it does:** a role is like a uniform, and it carries two separate
+documents. The **trust policy** answers *who may put it on* — its fields
+are `Effect`, `Principal` and `Action`, where `Principal` is the "who".
+The **permissions policy** answers *what you may do while wearing it* —
+the familiar `Effect`, `Action`, `Resource`. A trust policy needs no
+`Resource`, because the resource is the role itself.
+**How we used it:** `parking-lambda-exec` trusts only
+`lambda.amazonaws.com` via `sts:AssumeRole`, and grants four DynamoDB
+actions on one table plus writing to its own log group. Lambda assumes it
+at runtime and receives temporary credentials — no key exists anywhere.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## Identity-based vs resource-based policies
+
+**Why we needed it:** API Gateway had to be allowed to invoke the Lambda
+function, and none of the policies written so far could express that.
+**What it does:** two directions to the same lock. An **identity-based**
+policy is attached to a user or role and says *"this identity may do these
+things."* A **resource-based** policy is attached to the thing itself and
+says *"these callers may touch me."* Some permissions can only be granted
+from one side.
+**How we used it:** `aws_lambda_permission` attaches a resource-based
+policy to the function, naming `apigateway.amazonaws.com` as the allowed
+principal and restricting it by `source_arn` to this specific API. This is
+also why the deployment policy needed `lambda:AddPermission`,
+`lambda:RemovePermission` and `lambda:GetPolicy` — those three actions
+exist to manage a function's resource-based policy.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## Packaging code for Lambda, and why `build/` is dangerous
+
+**Why we needed it:** Lambda runs a zip file, not a folder on my laptop,
+and the Python runtime only ships boto3 — FastAPI, Mangum and Pydantic
+have to be bundled.
+**What it does:** two ideas, both of which bit us.
+
+First, **you are building for a different machine.** Pydantic contains
+compiled code, and `pip` normally downloads builds for the machine it is
+running on — arm64 macOS. Lambda is x86-64 Linux.
+`--platform manylinux2014_x86_64 --only-binary=:all:` forces the Linux
+builds. The proof is in the filename:
+`_pydantic_core.cpython-313-x86_64-linux-gnu.so`. Get it wrong and it
+uploads happily, then fails at runtime with an unhelpful import error.
+
+Second, **`build/` is a snapshot, not a link.** `cp -r app build/` copies
+the code at one moment. Editing `app/` afterwards changes nothing in
+`build/`. We hit exactly this: local tests passed against `app/` while the
+zip still held the old buggy `PUT`. Testing one version and shipping
+another, with nothing warning us.
+**How we used it:** `requirements-lambda.txt` lists only runtime
+dependencies, the build starts with `rm -rf build` so stale files cannot
+survive, and the build must be re-run after any change to `app/`.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## Terraform: data sources, outputs, and dependencies
+
+**Why we needed it:** the zip had to be created, the URL had to be
+findable, and some things must happen in a specific order.
+**What it does:**
+- A **`data` block** reads or computes something Terraform does not own.
+  `archive_file` produces a zip on local disk — no AWS object involved.
+  Data sources resolve during `plan`, which is why the zip's hash was
+  already known before `apply` ran.
+- An **`output`** hands a value back after apply. `terraform output
+  api_url` prints the URL rather than hunting for it in the console.
+- **Dependencies** are normally free: referencing
+  `aws_dynamodb_table.parking_spots.arn` tells Terraform the table must
+  exist first. Order is never declared, it is inferred from references.
+  **`depends_on`** is the escape hatch for when there is no reference —
+  the Lambda function doesn't mention the log group, so without it Lambda
+  could create its own retention-less group first.
+**How we used it:** all three, plus `path.module` to keep paths relative
+to the config folder rather than hardcoded to this laptop.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## Tainted resources, and reading a destroy count
+
+**Why we needed it:** a `plan` showed `1 to destroy` when nothing should
+have been destroyed, which is exactly the moment the habit matters.
+**What it does:** when Terraform creates something but then fails before
+it can confirm the result, it marks the resource **tainted** — "I made
+this, but I don't trust it." The next plan shows `-/+`, meaning destroy
+then recreate. Three symbols in total: `+` create, `~` modify in place,
+`-` destroy.
+**How we used it:** the log group was created, then the read-back was
+denied, so it came back tainted and was rebuilt on the next run. The rule
+that came out of it is better than the one I started with: **never approve
+a destroy you cannot explain** — not "never approve a destroy." Here the
+reason was printed on screen and the thing being destroyed was empty.
+**What I understand:**
+**What I still need to learn:**
+
+---
+
+## List operations cannot be scoped to a resource
+
+**Why we needed it:** the first `apply` of the log group failed with
+`AccessDenied` on `logs:DescribeLogGroups`, despite the policy granting
+log permissions on `/aws/lambda/parking-*`.
+**What it does:** the error named the resource it evaluated against —
+`log-group::log-stream:`, with the group name slot **empty**. That is the
+explanation. `DescribeLogGroups` asks *which groups exist*, a question
+that names no particular group, so no prefix pattern can match it. List
+and describe operations generally need `Resource: "*"`.
+**How we used it:** rather than widening the whole statement, the single
+list action was isolated into its own statement on `"*"`, leaving the six
+scopeable log actions restricted. Recorded as a documented exception in
+`ARCHITECTURE.md` rather than a doc that quietly claims perfect scoping.
+**What I understand:**
+**What I still need to learn:**
