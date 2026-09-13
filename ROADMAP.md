@@ -96,7 +96,12 @@ and committed.
   working deployment. Done twice.
 - `PUT /spots/{spot_id}` fixed: it previously trusted the body's `spot_id`
   over the URL's, so a mismatch silently wrote the wrong item. Now returns
-  `400`, with a test covering it. Seven tests.
+  `400`, with a test covering it.
+- Test coverage completed to the brief's section 15 list: update, delete and
+  list had no tests at all, and the delete test asserts the row is actually
+  gone afterwards rather than trusting the `204`. **Ten tests**, covering
+  every endpoint and every error path, all verified against the live
+  deployment as well as locally.
 - `README.md` written — purpose, architecture, full API reference with
   worked examples, prerequisites, deployment, tests, cost, cleanup. The
   deployment and cleanup sections were written by hand while performing a

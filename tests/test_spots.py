@@ -46,3 +46,26 @@ def test_put_mismatched_id_rejected():
 
     response = client.put("/spots/T5", json={"spot_id": "T6", "status": "OCCUPIED"})
     assert response.status_code == 400
+
+def test_update_spot():
+    client.post("/spots", json={"spot_id": "T7", "status": "AVAILABLE"})
+
+    response = client.put("/spots/T7", json={"spot_id": "T7", "status": "OCCUPIED"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "OCCUPIED"
+
+def test_delete_spot():
+    client.post("/spots", json={"spot_id": "T8", "status": "AVAILABLE"})
+
+    response = client.delete("/spots/T8")
+    assert response.status_code == 204
+
+    assert client.get("/spots/T8").status_code == 404
+
+def test_list_spots():
+    client.post("/spots", json={"spot_id": "T9", "status": "AVAILABLE"})
+
+    response = client.get("/spots")
+    assert response.status_code == 200
+    spot_ids = [spot["spot_id"] for spot in response.json()]
+    assert "T9" in spot_ids

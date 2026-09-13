@@ -172,10 +172,11 @@ source .venv/bin/activate
 python -m pytest -v
 ```
 
-Seven tests: the health check, creating a spot, fetching one back, a `404` for
-a spot that does not exist, a full check-in/check-out cycle, the `409` conflict
-raised by checking in twice, and the `400` raised when a `PUT` body's `spot_id`
-disagrees with the URL.
+Ten tests, covering every endpoint and every error path: the health check,
+create, fetch one, list, update, delete (including confirming the row is
+actually gone afterwards), a `404` for a spot that does not exist, a full
+check-in/check-out cycle, the `409` conflict raised by checking in twice, and
+the `400` raised when a `PUT` body's `spot_id` disagrees with the URL.
 
 A fixture in `tests/conftest.py` deletes every spot after each test, so the
 suite leaves the table exactly as it found it.
