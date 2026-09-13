@@ -24,12 +24,12 @@ chosen, what the alternative was, and what the choice costs.
            |  boto3
            v
 +---------------------+
-|  DynamoDB           |  parking_spots   (current state, mutated)
-|  (on-demand)        |  parking_sessions (history, append-only)
+|  DynamoDB           |  parking_spots (current state, mutated in place)
+|  (on-demand)        |  keyed on spot_id
 +---------------------+
 
-CloudWatch Logs  <- all function output and errors
-IAM role/policy  -> grants access to exactly these two tables
+CloudWatch Logs  <- all function output and errors, 14-day retention
+IAM role/policy  -> four DynamoDB actions, scoped to this one table
 ```
 
 ---
@@ -133,36 +133,38 @@ during deployment, so the translation is understood rather than assumed.
 
 ---
 
-## Decision 3 — Retain session history
+## Decision 3 — Session history: designed, deliberately not built
 
-**Chosen:** two tables. `parking_spots` holds current state;
-`parking_sessions` records every completed and in-progress stay.
-**Alternative:** one table, where check-out simply erases the vehicle.
+**Chosen:** one table. `parking_spots` holds current state, and check-out
+simply returns the spot to `AVAILABLE`.
+**Designed but not implemented:** a second table, `parking_sessions`,
+recording every completed and in-progress stay.
 
-**Why:** "How long was that car here?", occupancy over time, and any
-future billing all require history. Erasing it at check-out makes those
-questions permanently unanswerable.
+**Why the design exists:** "How long was that car here?", occupancy over
+time, and any future billing all require history, and erasing it at
+check-out makes those questions permanently unanswerable. It also models a
+distinction worth learning — `parking_spots` items are **mutated in
+place**, while session records would be an **append-only log**. Different
+key designs, different access patterns.
 
-It also models a distinction worth learning: `parking_spots` items are
-**mutated in place**, while `parking_sessions` items are an
-**append-only log**. These have different key designs and different
-access patterns.
+**Why it was not built:** the assignment asks for vehicle check-in and
+check-out, which the `AVAILABLE` ⇄ `OCCUPIED` state machine already
+satisfies. History was an addition of my own, and was always sequenced
+last.
 
-**What this costs — and how it is handled:**
+Building it requires `TransactWriteItems`. Check-in would have to write
+twice — mark the spot occupied *and* open a session — atomically, because a
+partial failure would leave a car parked with no arrival record, corruption
+that no later request could repair. The same call would also need a
+condition (`only if the spot is still AVAILABLE`) to stop two vehicles
+claiming one spot concurrently. That is the hardest DynamoDB concept in the
+project, and it would have been introduced to satisfy a requirement nobody
+set.
 
-Check-in must now write twice: mark the spot occupied *and* open a
-session. A partial failure would leave a car parked with no arrival
-record — corruption that no later request can repair.
-
-Resolved with `TransactWriteItems`, which commits both writes atomically
-and carries a condition (`only if the spot is still AVAILABLE`). The same
-call also prevents two vehicles claiming one spot concurrently, without
-any locking.
-
-**Sequencing:** sessions are built *after* CRUD and state transitions are
-working and tested, as an additive feature rather than part of the
-foundation. This keeps the hardest DynamoDB concept out of the way until
-the application already works.
+**What this costs:** the deployed system cannot answer historical
+questions. Occupancy is a point-in-time value only. Adding history later
+means the second table, the transactional write, and a decision about what
+to do with spots already occupied when the change ships.
 
 ---
 
@@ -276,9 +278,10 @@ branch anywhere in the codebase.
 
 - **No credentials anywhere.** Lambda assumes an IAM role; AWS injects
   temporary credentials at runtime. There is no key to leak or rotate.
-- **Least privilege.** The execution policy grants only the specific
-  DynamoDB actions used, scoped to these two table ARNs. No wildcards,
-  no `AdministratorAccess`.
+- **Least privilege.** The execution policy grants four DynamoDB actions —
+  `GetItem`, `PutItem`, `DeleteItem`, `Scan` — scoped to the single
+  `parking_spots` table ARN, plus permission to write to its own log
+  group. No wildcards, no `AdministratorAccess`, no AWS-managed policies.
 - **Input validation** at the edge via Pydantic models; malformed
   requests are rejected before reaching business logic.
 - **No internal error leakage.** Unhandled exceptions return a generic

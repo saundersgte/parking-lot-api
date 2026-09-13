@@ -40,4 +40,9 @@ def test_check_in_twice_conflicts():
 
     response = client.post("/spots/T4/check-in")
     assert response.status_code == 409
-    
+
+def test_put_mismatched_id_rejected():
+    client.post("/spots", json={"spot_id": "T5", "status": "AVAILABLE"})
+
+    response = client.put("/spots/T5", json={"spot_id": "T6", "status": "OCCUPIED"})
+    assert response.status_code == 400

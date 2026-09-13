@@ -66,6 +66,8 @@ def get_spot(spot_id: str):
 
 @app.put("/spots/{spot_id}")
 def update_spot(spot_id: str, spot:Spot):
+    if spot.spot_id != spot_id:
+        raise HTTPException(status_code=400, detail="spot_id in body must match URL")
     if storage.get_spot(spot_id) is None:
         raise HTTPException(status_code=404, detail="Spot not found")
     storage.save_spot(spot)
