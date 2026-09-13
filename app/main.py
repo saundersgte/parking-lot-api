@@ -8,6 +8,7 @@ Run locally from the project root with:
 from fastapi import FastAPI, HTTPException
 from app.models import Spot
 from app import storage
+from mangum import Mangum
 
 # `app` is the application object.
 #
@@ -75,3 +76,5 @@ def delete_spot(spot_id: str):
     if storage.get_spot(spot_id) is None:
         raise HTTPException(status_code=404, detail="Spot not found")
     storage.delete_spot(spot_id)
+
+handler = Mangum(app)
