@@ -107,19 +107,58 @@ and committed.
   deployment and cleanup sections were written by hand while performing a
   real destroy-and-rebuild, so the steps are known to work.
 
-**The project meets every item in the brief's Definition of Done.**
+### Published, and the pull request workflow adopted
+
+Mentor feedback from an earlier meeting surfaced late and turned out to be
+one genuine gap plus two items already satisfied.
+
+- **"Don't spend a lot of time trying to be a database expert. Setup,
+  connect it."** Already followed, and it retroactively supports the
+  Decision 3 scope call — `TransactWriteItems` is exactly the depth this
+  was steering away from.
+- **"Once create and read work, start on IaC. Deploy and keep versioning."**
+  Already done, and then some.
+- **Git branches and pull requests — the real gap.** The repository had 27
+  commits, one branch, and *no remote at all*. It had never been published,
+  which also means the brief's final deliverable was outstanding without
+  that being noticed.
+
+What was done about it:
+
+- `parking_lot_api_brief.md` untracked (`git rm --cached`) and gitignored —
+  it contains personal career notes written for Claude rather than material
+  for a reviewer. Still on disk, and still in earlier commit history.
+- Repository published as **private** at
+  `github.com/saundersgte/parking-lot-api`, mentor to be added as a
+  collaborator. Private until job applications begin. Verified that no
+  `.venv`, `build/`, `build.zip`, Terraform state or provider cache reached
+  the remote — the `.gitignore` written in week one doing its job at the
+  moment it finally mattered.
+- **Pull request #1**, the first use of the workflow: branch
+  (`fix/account-id-placeholder`) → change → commit → push → pull request →
+  review → merge (squashed) → branch deleted. The change replaced the real
+  AWS account ID with the `YOUR_ACCOUNT_ID` placeholder in all five ARNs,
+  fixing a genuine inconsistency — the README told readers to substitute a
+  placeholder that wasn't in the file.
+- Reviewed with `/code-review` before merging, which is where the mentor
+  described an AI review sitting in his own team's flow. No findings: the
+  diff was five string substitutions in a file no code reads.
+
+**The project meets every item in the brief's Definition of Done, including
+the GitHub repository as final deliverable.**
 
 ## Current
 
+- Add the mentor as a collaborator on the repository, and a short repo
+  description.
 - Mentor demo.
 
 ## Next
 
-- Replace the real AWS account ID in `iam/deploy-policy.json` with the
-  `YOUR_ACCOUNT_ID` placeholder before the repo goes public — the README
-  already instructs readers to substitute a placeholder that isn't there.
-- Delete the `parking-api-dev` access key once the project is finished. It
-  is the only long-lived credential in the project.
+- After the demo: `terraform destroy`, then delete the `parking-api-dev`
+  access key. It is the only long-lived credential in the project.
+- Future work goes through a branch and a pull request rather than straight
+  to `main`.
 
 ## Deliberately not done
 
@@ -133,5 +172,7 @@ and committed.
   public and unauthenticated.
 - A broader validation and error-handling pass. Pydantic covers request
   shape; `status` is free text rather than a constrained set of values.
-- At project end: delete the `parking-api-dev` access key — the only
-  long-lived credential in the project.
+- **Per-branch environments.** The mentor's team gives every branch its own
+  environment (QA and so on). Recorded as understood rather than built —
+  it would mean Terraform variables and workspaces, with a distinct table
+  and function name per environment. Out of scope for a two-week exercise.
