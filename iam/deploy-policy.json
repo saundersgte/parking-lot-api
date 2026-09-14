@@ -22,7 +22,7 @@
             "lambda:GetFunctionEventInvokeConfig",
             "lambda:InvokeFunction"
         ],
-        "Resource": "arn:aws:lambda:us-west-2:614190303686:function:parking-*"
+        "Resource": "arn:aws:lambda:us-west-2:YOUR_ACCOUNT_ID:function:parking-*"
     },
     {
         "Sid": "ManageParkingRoles",
@@ -40,13 +40,13 @@
             "iam:ListAttachedRolePolicies",
             "iam:ListInstanceProfilesForRole"
         ],
-        "Resource": "arn:aws:iam::614190303686:role/parking-*"
+        "Resource": "arn:aws:iam::YOUR_ACCOUNT_ID:role/parking-*"
     },
     {
         "Sid": "PassRoleToLambdaOnly",
         "Effect": "Allow",
         "Action": "iam:PassRole",
-        "Resource": "arn:aws:iam::614190303686:role/parking-*",
+        "Resource": "arn:aws:iam::YOUR_ACCOUNT_ID:role/parking-*",
         "Condition": {
             "StringEquals": {
                 "iam:PassedToService": "lambda.amazonaws.com"
@@ -80,7 +80,7 @@
         "logs:TagResource",
         "logs:ListTagsForResource"
        ],
-       "Resource": "arn:aws:logs:us-west-2:614190303686:log-group:/aws/lambda/parking-*"
+       "Resource": "arn:aws:logs:us-west-2:YOUR_ACCOUNT_ID:log-group:/aws/lambda/parking-*"
     },
     {
         "Sid": "DescribeLogGroupsUnscoped",
@@ -105,7 +105,7 @@
             "dynamodb:DeleteItem",
             "dynamodb:Scan"
         ],
-        "Resource": "arn:aws:dynamodb:us-west-2:614190303686:table/parking_*"
+        "Resource": "arn:aws:dynamodb:us-west-2:YOUR_ACCOUNT_ID:table/parking_*"
     }
     ]
 }
